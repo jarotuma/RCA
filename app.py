@@ -59,5 +59,6 @@ if prompt := st.chat_input("Napište popis incidentu..."):
             response = st.session_state.chat.send_message(prompt)
             message_placeholder.markdown(response.text)
             st.session_state.messages.append({"role": "model", "content": response.text})
+        # ZDE JE TA ZMĚNA PRO ZOBRAZENÍ CHYBY
         except Exception as e:
-            message_placeholder.error("Chyba API. Zkontrolujte, zda je API klíč správný.")
+            message_placeholder.error(f"Skutečná chyba od Googlu: {e}")
