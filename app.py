@@ -1,10 +1,11 @@
 import streamlit as st
 import google.generativeai as genai
+import os
 
 st.set_page_config(page_title="ABS RCA Vyšetřovatel", page_icon="🕵️")
 st.title("🕵️ AI Asistent pro analýzu kořenových příčin (ABS)")
 
-# Postranní panel pro vložení klíče
+# Postranní panel
 with st.sidebar:
     st.header("Nastavení")
     api_key = st.text_input("Vložte Gemini API klíč:", type="password")
@@ -17,10 +18,12 @@ if not api_key:
     st.warning("👈 Pro spuštění vložte do postranního panelu svůj Gemini API klíč.")
     st.stop()
 
-# Aktivace umělé inteligence
-genai.configure(api_key=api_key)
+# Konfigurace s ošetřením chyb
+try:
+    genai.configure(api_key=api_key)
+except Exception as e:
+    st.error(f"Chyba konfigurace API: {e}")
 
-# Instrukce pro AI (znalostní báze)
 system_instruction = """
 Jsi expertní vyšetřovatel BOZP a skoronehod. Tvým úkolem je analyzovat incidenty a určit kořenovou příčinu (Root Cause) striktně podle metodiky ABS.
 Ptej se uživatele na detaily incidentu. Pokud je popis stručný, polož max 3 doplňující otázky.
@@ -28,26 +31,30 @@ Vždy komunikuj česky, ale kategorie ABS uváděj v angličtině (např. Proced
 Jakmile máš jasno, vypiš finální verdikt: Shrnutí, Direct Cause, ABS Intermediate Cause a ABS Root Cause.
 """
 
-# ZDE JE ZMĚNA MODELU NA STABILNĚJŠÍ VERZI
-model = genai.GenerativeModel(
-    model_name="gemini-1.5-pro",
-    system_instruction=system_instruction
-)
+# Zkusíme moderní model 1.5 Flash, pokud selže, zkusíme starší Pro
+try:
+    model = genai.GenerativeModel(
+        model_name="gemini-1.5-flash",
+        system_instruction=system_instruction
+    )
+except:
+    # Záložní varianta pro starší verze knihovny
+    model = genai.GenerativeModel("gemini-pro")
 
-# Paměť konverzace
+# Paměť
 if "messages" not in st.session_state:
     st.session_state.messages = [{"role": "model", "content": "Dobrý den. Jsem váš RCA asistent. Popište mi prosím incident, který chcete analyzovat."}]
     
 if "chat" not in st.session_state or st.session_state.chat is None:
     st.session_state.chat = model.start_chat(history=[])
 
-# Zobrazení historie chatu
+# Historie
 for msg in st.session_state.messages:
     role = "assistant" if msg["role"] == "model" else "user"
     with st.chat_message(role):
         st.markdown(msg["content"])
 
-# Uživatelské okénko pro psaní
+# Chat
 if prompt := st.chat_input("Napište popis incidentu..."):
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
@@ -61,4 +68,4 @@ if prompt := st.chat_input("Napište popis incidentu..."):
             message_placeholder.markdown(response.text)
             st.session_state.messages.append({"role": "model", "content": response.text})
         except Exception as e:
-            message_placeholder.error(f"Skutečná chyba od Googlu: {e}")
+            message_placeholder.error(f"Chyba: {e}")
