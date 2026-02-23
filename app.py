@@ -28,8 +28,9 @@ Vždy komunikuj česky, ale kategorie ABS uváděj v angličtině (např. Proced
 Jakmile máš jasno, vypiš finální verdikt: Shrnutí, Direct Cause, ABS Intermediate Cause a ABS Root Cause.
 """
 
+# ZDE JE ZMĚNA MODELU NA STABILNĚJŠÍ VERZI
 model = genai.GenerativeModel(
-    model_name="gemini-1.5-flash",
+    model_name="gemini-1.5-pro",
     system_instruction=system_instruction
 )
 
@@ -59,6 +60,5 @@ if prompt := st.chat_input("Napište popis incidentu..."):
             response = st.session_state.chat.send_message(prompt)
             message_placeholder.markdown(response.text)
             st.session_state.messages.append({"role": "model", "content": response.text})
-        # ZDE JE TA ZMĚNA PRO ZOBRAZENÍ CHYBY
         except Exception as e:
             message_placeholder.error(f"Skutečná chyba od Googlu: {e}")
